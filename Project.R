@@ -19,31 +19,7 @@ df17 <- df17 %>% mutate(Year = 2017)
 df18 <- df18 %>% mutate(Year = 2018)
 df19 <- df19 %>% mutate(Year = 2019)
 
-## Importing packages
 
-library(tidyverse) # metapackage with lots of helpful functions
-
-library(reshape2)
-library(lattice)
-library(psych)
-library(DataExplorer)
-library(viridis)
-#library(viridisLite)
-
-
-# read in the datasets
-df15 <- read_csv("/kaggle/input/world-happiness/2015.csv")
-df16 <- read_csv("/kaggle/input/world-happiness/2016.csv")
-df17 <- read_csv("/kaggle/input/world-happiness/2017.csv")
-df18 <- read_csv("/kaggle/input/world-happiness/2018.csv")
-df19 <- read_csv("/kaggle/input/world-happiness/2019.csv")
-
-# add a year column to each data set
-df15 <- df15 %>% mutate(Year = 2015)
-df16 <- df16 %>% mutate(Year = 2016)
-df17 <- df17 %>% mutate(Year = 2017)
-df18 <- df18 %>% mutate(Year = 2018)
-df19 <- df19 %>% mutate(Year = 2019)
 
 
 # rename the columns to standardize
@@ -135,15 +111,64 @@ r <- df %>%
 
 ggplot(r, aes(x = fct_reorder(Region, md), y = mn, fill = mn)) +
   geom_bar(stat = "Identity", show.legend = F) +
-  scale_fill_gradient(low = "red4", high = "green") +
-  labs(x = "", y = "Median Happiness Score", fill = "Score",
+  scale_fill_gradient(low = "red", high = "green") +
+  labs(x = "", y = "Median happiness score", fill = "Score",
        title = "Median happiness score per region") +
   theme_light(base_size = 18) + coord_flip()
 
+### GDP per capita per region ###
 
+e <- df %>%
+  select(Region, `Economy (GDP per Capita)`) %>%
+  group_by(Region) %>%
+  summarise(n = n(),
+            md = median(`Economy (GDP per Capita)`))
 
+ggplot(data = e, aes(x = Region, y = md, fill = md)) + 
+  geom_bar(stat = "identity", show.legend = F) + 
+  scale_fill_gradient(low = "red", high = "green") +
+  labs(x= "", y = "Economy (GDP per Capita) Score", 
+       title = "GDP per capita per region") + 
+  theme_light(base_size = 18) + coord_flip()
 
+### Life expectancy per region ###
 
+h <- df %>% select(Region, `Health (Life Expectancy)`) %>%
+  group_by(Region) %>%
+  summarise(md = median(`Health (Life Expectancy)`))
+
+ggplot(data = h, aes(x = Region, y = md, fill = md)) +
+  geom_bar(stat = "identity", show.legend = F) +
+  scale_fill_gradient(low = "red", high = "green") +
+  labs(x = "", y = "Life expectancy percentage", 
+       title = "Life expectancy per region") + 
+  coord_flip() + theme_light(base_size = 18)
+
+### Freedom per region ###
+
+f <- df %>% select(Region, Freedom) %>%
+  group_by(Region) %>%
+  summarise(md = median(Freedom))
+
+ggplot(data = f, aes(x = Region, y = md, fill = md)) +
+  geom_bar(stat = "identity", show.legend = F) + 
+  scale_fill_gradient(low = "red", high = "green") + 
+  labs(x = "", title = "Freedom per region", y = "Freedom percentage") +
+  coord_flip() + theme_light(base_size = 18)
+
+### Trust in government per region ###
+
+t <- df %>%
+  select(Region, `Trust (Government Corruption)`) %>%
+  group_by(Region) %>%
+  summarise(md = median(`Trust (Government Corruption)`))
+
+ggplot(data = t, aes(x = Region, y = md, fill = md)) +
+  geom_bar(stat = "identity", show.legend = F) +
+  scale_fill_gradient(low = "red", high = "green") +
+  labs(x = "", title = "Trust in governmnent per region", 
+       y = "Trust Score") +
+  coord_flip() + theme_light(base_size = 18)
 
 
 
