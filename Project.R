@@ -91,8 +91,8 @@ df <- df %>% mutate(Region = fct_recode(Region,
 
 options(repr.plot.width=12, repr.plot.height=8)
 ggplot(df, aes(Region, fill = Region)) +
-  geom_bar(stat = "count", show.legend = F, color = 'gray') + 
-  scale_fill_brewer(palette = "Reds") + coord_flip() +
+  geom_bar(stat = "count", show.legend = F, color = 'black') + 
+  scale_fill_brewer(palette = "Yellows") + coord_flip() +
   labs(x = "", fill = "Region", y = "Number of countries", 
        title = "Number of Countries per Region") + 
   theme_light(base_size = 18)
@@ -345,6 +345,15 @@ ggplot(predict_actual_rf, aes(Actual, Prediction )) +
   geom_point() + theme_bw() + geom_abline() +
   labs(title = "Random Forest Regression", x = "Actual happiness score",
        y = "Predicted happiness score")
+
+
+#### Median Happines over time ####
+
+Regions = df %>% distinct(select(Region))
+for(region in Regions){
+  region
+}
+  
 
 ###TODO
 ### Neural Net
