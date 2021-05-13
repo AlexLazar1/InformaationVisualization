@@ -3,6 +3,11 @@ title: "Project InfoVoz"
 author: "Dorina Craciun, Lazar Alexandru"
 output: html_document
 ---
+<style type="text/css">
+  body{
+  font-size: 16pt;
+}
+</style>
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
@@ -10,17 +15,160 @@ knitr::opts_chunk$set(echo = TRUE)
 
 # World Happinesss Report
 
-Greetings! In this project we decided to explore World Happiness dataset in order to find what are the key factors that keep people happy and communities together. We think it's a great idea to see the differences between regions in **why** are some regions happier than others and **what** is to be done in order to balance things given the fact that we live in times when we should all embrace each other and keep our heads up.
+Greetings! In this project we decided to explore World Happiness dataset in order to find what are the key factors that keep people happy and communities together. We think it's a great idea to see the differences between regions: in **why** are some regions happier than others and **what** is to be done in order to balance things given the fact that we live in times when we should all embrace each other and keep our heads up.
 
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+### Exploration of the data set
 
-```{r cars}
-summary(cars)
+For the first part let's explore a bit the data set and explore some interesting facts.  
+
+```{r include=FALSE}
+library(tidyverse) 
+library(reshape2)
+library(lattice)
+library(psych)
+library(DataExplorer)
+library(viridis)
+
+#reading data
+df15 <- read_csv("input/2015.csv")
+df16 <- read_csv("input/2016.csv")
+df17 <- read_csv("input/2017.csv")
+df18 <- read_csv("input/2018.csv")
+df19 <- read_csv("input/2019.csv")
+
+df15 <- df15 %>% mutate(Year = 2015)
+df16 <- df16 %>% mutate(Year = 2016)
+df17 <- df17 %>% mutate(Year = 2017)
+df18 <- df18 %>% mutate(Year = 2018)
+df19 <- df19 %>% mutate(Year = 2019)
+
+# rename the columns to standardize
+df17 <- df17 %>% rename(c("Happiness Rank" = "Happiness.Rank" ,              
+                          "Happiness Score" = "Happiness.Score",
+                          "Economy (GDP per Capita)" = "Economy..GDP.per.Capita.",  
+                          "Health (Life Expectancy)" = "Health..Life.Expectancy.",     
+                          "Trust (Government Corruption)" = "Trust..Government.Corruption.",
+                          "Dystopia Residual" = "Dystopia.Residual"))
+
+df18 <- df18 %>% rename(c("Country" = "Country or region",
+                          "Happiness Rank" = "Overall rank",
+                          "Happiness Score" = "Score",
+                          "Economy (GDP per Capita)" = "GDP per capita",              
+                          "Health (Life Expectancy)" = "Healthy life expectancy",
+                          "Freedom" = "Freedom to make life choices" ,
+                          "Trust (Government Corruption)" = "Perceptions of corruption")) 
+
+# chart to num
+df18$`Trust (Government Corruption)` <-  as.numeric(df18$`Trust (Government Corruption)`)
+
+df19 <- df19 %>% rename(c("Country" = "Country or region",
+                          "Happiness Rank" = "Overall rank",
+                          "Happiness Score" = "Score",
+                          "Economy (GDP per Capita)" = "GDP per capita",
+                          "Health (Life Expectancy)" = "Healthy life expectancy",    
+                          "Freedom" = "Freedom to make life choices",
+                          "Trust (Government Corruption)" = "Perceptions of corruption"))
+# bind tables
+a <- bind_rows(df15, df16)
+b <- bind_rows(a, df17)
+c <- bind_rows(b, df18)
+d <- bind_rows(c, df19)
+
+n <- c("Family", "Standard Error", "Dystopia Residual", "Region",  
+       "Upper Confidence Interval", "Lower Confidence Interval",
+       "Whisker.high", "Whisker.low", "Social support")
+d <- d[ , !(names(d) %in% n)]
+
+
+r1 <- df15 %>% select("Country", "Region")
+r2 <- df16 %>% select("Country", "Region")
+r3 <- full_join(r1, r2, by = c("Country" = "Country","Region" = "Region"))
+
+df <- left_join(d, r3, by = "Country"); head(df); tail(df)
+
+df <- df %>% drop_na()
+df$Region <- as.factor(df$Region)
+df$Year <- as.factor(df$Year)
+df <- df %>% mutate(Region = fct_recode(Region,"Southeastern Asia" = "Southern Asia", "Southeastern Asia" = "Eastern Asia"))
 ```
 
-## Including Plots
+Let's check how many countries each region have. It's an important factor in calculating the mean of happiness for those regions.  
 
-You can also embed plots, for example:
+```{r echo=FALSE}
+ggplot(df, aes(Region, fill = Region)) +
+  geom_bar(stat = "count", show.legend = F, color = 'black') + 
+  coord_flip() +
+  labs(x = "", fill = "Region", y = "No. of countries", 
+       title = "No. of countries per region") + 
+  theme_light(base_size = 18)
+
+```
+  
+Now let's check the mean of some important features over the regions.
+
+```{r figures-side, fig.show="hold", out.width="50%", echo=FALSE}
+ss <- df %>%
+     select(Region, `Happiness Score`) %>%
+     group_by(Region) %>%
+     summarise(n = n(), mn = mean(`Happiness Score`), md = median(`Happiness Score`), std = sd(`Happiness Score`))
+
+ggplot(ss, aes(x = fct_reorder(Region, md), y = mn, fill = mn)) +
+  geom_bar(stat = "Identity", show.legend = F) +
+  scale_fill_gradient(low = "red", high = "green") +
+  labs(x = "", y = "Median happiness score", fill = "Score",
+       title = "Median happiness score") +
+  theme_light(base_size = 18) + coord_flip()
+
+ss <- df %>%
+     select(Region, `Economy (GDP per Capita)`) %>%
+     group_by(Region) %>%
+     summarise(n = n(), md = median(`Economy (GDP per Capita)`))
+
+ggplot(data = ss, aes(x = Region, y = md, fill = md)) + 
+  geom_bar(stat = "identity", show.legend = F) + 
+  scale_fill_gradient(low = "red", high = "green") +
+  labs(x= "", y = "Economy score", 
+       title = "Economy") + 
+  theme_light(base_size = 18) + coord_flip()
+```
+
+```{r fig.show="hold", out.width="50%", echo=FALSE}
+ss <- df %>% select(Region, `Health (Life Expectancy)`) %>%
+  group_by(Region) %>%
+  summarise(md = median(`Health (Life Expectancy)`))
+
+ggplot(data = ss, aes(x = Region, y = md, fill = md)) +
+  geom_bar(stat = "identity", show.legend = F) +
+  scale_fill_gradient(low = "red", high = "green") +
+  labs(x = "", y = "Life expectancy percentage", 
+       title = "Life expectancy") + 
+  coord_flip() + theme_light(base_size = 18)
+
+
+ss <- df %>% select(Region, Freedom) %>%
+  group_by(Region) %>%
+  summarise(md = median(Freedom))
+
+ggplot(data = ss, aes(x = Region, y = md, fill = md)) +
+  geom_bar(stat = "identity", show.legend = F) + 
+  scale_fill_gradient(low = "red", high = "green") + 
+  labs(x = "", title = "Freedom", y = "Freedom percentage") +
+  coord_flip() + theme_light(base_size = 18)
+```
+
+```{r fig.show="hold", out.width="50%", echo=FALSE}
+ss <- df %>%
+      select(Region, `Trust (Government Corruption)`) %>%
+      group_by(Region) %>%
+      summarise(md = median(`Trust (Government Corruption)`))
+
+ggplot(data = ss, aes(x = Region, y = md, fill = md)) +
+  geom_bar(stat = "identity", show.legend = F) +
+  scale_fill_gradient(low = "red", high = "green") +
+  labs(x = "", title = "Trust in governmnent", 
+       y = "Trust score") +
+  coord_flip() + theme_light(base_size = 18)
+```
 
 ```{r pressure, echo=FALSE}
 plot(pressure)
