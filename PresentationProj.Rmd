@@ -103,7 +103,23 @@ ggplot(df, aes(Region, fill = Region)) +
   theme_light(base_size = 18)
 
 ```
-  
+
+Let's calculate now the meam and the median of happiness score for each region.
+```{r , echo=FALSE, warning=FALSE, message=FALSE}
+# Compute descriptive statistics by groups
+
+library(ggpubr)
+stable <- desc_statby(df, measure.var = "Happiness Score",
+                      grps = "Region")
+stable <- stable[, c("Region","mean","median")]
+names(stable) <- c("Region", "Mean of happiness score","Median of happiness score")
+# Summary table plot
+stable.p <- ggtexttable(stable,rows = NULL, 
+                        theme = ttheme("classic"))
+
+stable.p  
+```
+
 Now let's check the mean of some important features over the regions.
 
 ```{r figures-side, fig.show="hold", out.width="50%", echo=FALSE}
@@ -170,8 +186,93 @@ ggplot(data = ss, aes(x = Region, y = md, fill = md)) +
   coord_flip() + theme_light(base_size = 18)
 ```
 
-```{r pressure, echo=FALSE}
-plot(pressure)
+### Correlation plot
+Let’s see the correlation between numerical variables in our dataset.
+According to this cor plot, Economy, life expectancy, and freedom play the most significant role in contributing to happiness. Trust and generosity have the lowest impact on the happiness score.
+```{r , echo=FALSE, warning=FALSE, message=FALSE}
+library(ggcorrplot)
+# Compute a correlation matrix
+cor_df <- subset(df, select = -c(1, 2, 9, 10))
+
+corr <- round(cor(cor_df), 1)
+
+# Visualize the correlation matrix
+ggcorrplot(corr, 
+           # hc.order = TRUE, #for ordering; using hierarchical clustering
+           #type = "lower", #for lower triangle
+           lab = TRUE,
+           lab_size = 4,
+           title = "Correlation of Variables",
+           ggtheme = theme_bw)
 ```
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+### Comparing different continents regarding their happiness variables
+Let’s calculate the average happiness score and the average of the other variables for each continent. Then melt it to have variables and values in separate columns. Finally, using ggplot to show the difference between continents.
+
+```{r , echo=FALSE, warning=FALSE, message=FALSE}
+df.Region <- df %>%
+  select(-3) %>%
+  group_by(Region) %>%
+  summarise_at(vars(-Country, -`Happiness Rank`, -Year), funs(mean(.)))
+
+df.Region.melt <- melt(df.Region)
+
+ggplot(df.Region.melt, aes(y=value, x=Region, color=Region, fill=Region)) + 
+  geom_bar( stat="identity") +    
+  facet_wrap(~variable) + theme_bw() +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
+  labs(title = "Average value of happiness variables for different regions", 
+       y = "Average value") 
+
+```
+
+We can see that Australia has approximately the highest average in all fields except economy, after that North America and Western Europe are roughly the same regarding happiness score and the other factors. Finally, Sub Saharan Africa has the lowest scores in all fields.
+
+
+
+### Scatter plot with regression line
+Let’s see the correlation between happiness score and life expectancy in the happiness dataset for different continents by creating a scatter plot.
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE}
+ggplot(df, aes(x = `Health (Life Expectancy)`, y = `Happiness Score`)) + 
+  geom_point(aes(color=Region), size = 3, alpha = 0.8) +  
+  geom_smooth(aes(color = Region, fill = Region), 
+              method = "lm", fullrange = TRUE) +
+  facet_wrap(~Region) +
+  theme_bw() + labs(title = "Scatter plot with regression line")
+```
+
+
+The correlation between life expectancy and happiness score in Europe, North America, and Asia is more significant than the other continents. 
+
+
+
+### Happiness score comparison on different regions 
+Next let's see a comparison of the happiness score on different regions by creating 2 types of plots.
+
+#### Box plot
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE}
+ggplot(df , aes(x = Region, y = `Happiness Score`)) +
+  geom_boxplot(aes(fill=Region)) + theme_bw() +
+  theme(axis.title = element_text(size = (8)), axis.text.x = element_text(angle = 90, hjust = 1))
+```
+
+#### Violin plot
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE}
+ggplot(df, aes(x=Region, y=`Happiness Score`))+
+  geom_violin(aes(fill=Region),alpha=0.7,scale = "width")+ theme_bw() +
+  theme(axis.title = element_text(size = (8)), axis.text.x = element_text(angle = 90, hjust = 1))
+```
+
+
+
+
+
+
+
+```{r pressure, echo=FALSE, warning=FALSE, message=FALSE}
+plot(pressure)
+```
+<!-- Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot. -->
