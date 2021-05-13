@@ -177,6 +177,54 @@ pairs(
   data = df
 )
 
+### Interactive plot Happiness vs GDP
+# install.packages("plotly")
+library(plotly)
+plot_ly(df ,x = ~`Economy (GDP per Capita)`, y = ~`Happiness Score`,  hoverinfo = "text", text = ~Country) %>%
+  add_markers(frame = ~Region, size = ~`Happiness Score`, color = ~Region,
+              marker = list(sizemode = "diameter",  sizeref = 3)) %>%
+  animation_opts(
+    frame = 2000, 
+    transition = 300, 
+    easing = "elastic"
+  ) %>%
+  animation_slider(
+    currentvalue = list(
+      prefix = NULL, 
+      font = list(color = "red")
+    )
+  ) %>%   
+  layout(
+    xaxis = list(title = "GDP per Capita"),
+    yaxis = list(title = "Happiness Score"),
+    title = "Happiness vs GDP")
+
+##Interactive plot 2
+colors <- c('#4AC6B7', '#1972A4', '#965F8A', '#FF7070', '#C61951')
+plot_ly(df, x = ~`Economy (GDP per Capita)`, y = ~`Happiness Score`, z = ~`Health (Life Expectancy)`, color = ~Region, size = ~`Happiness Score`, colors = colors,
+        marker = list(symbol = 'circle', sizemode = 'diameter'), sizes = c(2, 20),
+        text = ~paste('Country:', Country, '<br>Life Expectancy:', `Health (Life Expectancy)`, '<br>Happiness Score:', `Happiness Score`,
+                      '<br>GDP.:', `Economy (GDP per Capita)`)) %>%
+  layout(title = 'Happiness v. Per Capita GDP',
+         scene = list(xaxis = list(title = 'GDP)',
+                                   gridcolor = 'rgb(255, 255, 255)',
+                                   zerolinewidth = 1,
+                                   ticklen = 5,
+                                   gridwidth = 2),
+                      yaxis = list(title = 'Happiness Score',
+                                   gridcolor = 'rgb(255, 255, 255)',
+                                   zerolinewidth = 1,
+                                   ticklen = 5,
+                                   gridwith = 2),
+                      zaxis = list(title = 'Life expectancy',
+                                   gridcolor = 'rgb(255, 255, 255)',
+                                   zerolinewidth = 1,
+                                   ticklen = 5,
+                                   gridwith = 2)),
+         paper_bgcolor = 'rgb(243, 243, 243)',
+         plot_bgcolor = 'rgb(243, 243, 243)')
+
+
 install.packages("ggcorrplot")
 library(ggcorrplot)
 # Compute a correlation matrix
@@ -243,6 +291,20 @@ stable.p <- ggtexttable(stable,rows = NULL,
                         theme = ttheme("classic"))
 
 stable.p
+
+#Happiness Score Around the World
+w <- map_data("world")
+colnames(w)[5]<- "Country"
+myw <- inner_join(w, df, by = "Country")
+worldplot <- ggplot(data = w, mapping = aes(x = long, y = lat, group = group)) + 
+  coord_fixed(1.3) + 
+  geom_polygon(color = "black", fill = "gray") +
+  geom_polygon(data=myw, aes(x = long, y = lat, group = group, fill = `Happiness Score`),color = "white") +
+  geom_polygon(color = "black", fill = NA) +
+  theme_bw() +
+  ggtitle("Happiness Score in the World") +
+  scale_fill_distiller(palette = "Spectral")
+worldplot
 
 
 # Linear Regression for predicting the happines of a country judging by the
@@ -347,21 +409,76 @@ ggplot(predict_actual_rf, aes(Actual, Prediction )) +
        y = "Predicted happiness score")
 
 
-#### Median Happines over time ####
 
-Regions = df %>% distinct(select(Region))
-for(region in Regions){
-  region
-}
+
+
+#split up sample
+
+dataset <- df[-1]
+split = sample.split(dataset$`Happiness Score`, SplitRatio = 0.7)
+
+#70% training data, 30% test data
+
+train_rf <- subset(dataset, split==TRUE)
+test_rf <- subset(dataset, split==FALSE)
+
+rf.model <- randomForest(x=train_rf, y=train_rf$`Happiness Score`, importance = TRUE)
+
+rf.model
+
+importance(rf.model, type = 2)
+
+#INTERPRET THE MODEL
+print(summary(rf.model))
+
+res_rf <- residuals(rf.model)
+class(res_rf)
+
+
+#PREDICTIONS
+
+Score.predictions_rf <- predict(rf.model, test_rf)
+
+results_rf <-cbind(Score.predictions_rf,test_rf$`Happiness Score`)
+colnames(results_rf) <-c('predicted','actual')
+results_rf<-as.data.frame(results_rf)
+
+print(head(results_rf))
+
+#MSE
+
+mse_rf <- mean( (results_rf$actual - results_rf$predicted)^2)
+print("MSE RANDOM FOREST")
+print(mse_rf)
+
+#RMSE
+print("RMSE RANDOM FOREST")
+print(mse_rf^0.5)
+
   
 
-###TODO
+###TODO inca nu merge
 ### Neural Net
 # install.packages("neuralnet")
-# library(neuralnet)
-# 
-# nn <- neuralnet(formula=Happiness Score ~ Economy (GDP per Capita) + Health (Life Expectancy) +
-#                   Freedom + Trust (Government Corruption) + Generosity,
-#                 data=as.data.frame(training_set),hidden=10,linear.output=TRUE)
-# plot(nn)
-  
+library(neuralnet)
+nn <- neuralnet(`Happiness Score`~`Economy (GDP per Capita)`+Generosity+`Health (Life Expectancy)`+
+                  Freedom+Generosity+`Trust (Government Corruption)`,
+                data=training_set, hidden=c(2,2), act.fct = "logistic")
+
+predicted.nn.values <- predict(nn,test_set)
+
+Pred_Actual_nn <- as.data.frame(cbind(Prediction = predicted.nn.values$net.result, Actual = test_set$`Happiness Score`))
+
+gg.nn <- ggplot(Pred_Actual_nn, aes(Actual, V1 )) +
+  geom_point() + theme_bw() + geom_abline() +
+  labs(title = "Neural Net", x = "Actual happiness score",
+       y = "Predicted happiness score") +
+  theme(plot.title = element_text(family = "Helvetica", face = "bold", size = (15)), 
+        axis.title = element_text(family = "Helvetica", size = (10)))
+gg.nn
+
+#Neural Net is the best predictor after Multiple Linear Regression. In fact, this model predicted happiness scores with the accuracy close to 100 %. Let's calculate the mean squared error for Multiple Linear Regression and Neural Net model.
+
+MSE.nn <- sum((test_set$`Happiness Score` - predicted.nn.values$net.result)^2)/nrow(test_set)
+
+print(paste("Mean Squared Error (Neural Net):", MSE.nn))
