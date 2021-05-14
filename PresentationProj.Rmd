@@ -551,8 +551,11 @@ ggplot(predict_actual_rf, aes(Actual, Prediction )) +
 ```
 
 
-### Neuralnet
-```{r , echo=FALSE, warning=FALSE, message=FALSE}
-plot(pressure)
-```
-<!-- Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot. -->
+### Conclusion
+
+After analyzing data of Global Happiness Levels in the world,we were able to discover the impact of each different factor in determining **happiness**. We had also found that among the different factors, Economic GDP tends to have the greatest on happiness with Health following close by.
+We determined that the **happiest** countries were located in Europe, particularly Scandinavia and Switzerland. Meanwhile the **least happy** countries were located in Africa and the Middle East. This suggests that countries in close proximity or those in the same region often have similar living conditions and are thus affected by factors similarly.
+
+We also noticed a correlation between low trust and low freedom which they usually go hand in hand.
+
+We are able to tell what makes countries and their citizens happier, thus allowing us to focus on prioritizing and improving these aspects of each nation.
