@@ -344,6 +344,7 @@ ggplot(df, aes(x=Region, y=`Happiness Score`))+
   geom_violin(aes(fill=Region),alpha=0.7,scale = "width")+ theme_bw() +
   theme(axis.title = element_text(size = (8)), axis.text.x = element_text(angle = 90, hjust = 1))
 ```
+
 ### Linear Regression for predicting the happines of a country judging by the health/life expectancy
 For the first model we tried **Linear Regression** to try to predict the happiness based on the what looks to be the best predictor: Life expectancy
 
@@ -384,6 +385,7 @@ ggplot(data = Linear_Model_1, aes(x=.fitted, y = .resid)) +
 library(ggfortify)
 autoplot(Linear_Model_1)
 ```
+
 ### Multiple linear regression model with all parameters included.
 
 ```{r , echo=FALSE, warning=FALSE, message=FALSE}
@@ -413,19 +415,21 @@ ggplot(predict_actual_4, aes(Actual, Prediction )) +
 
 
 ```{r}
-dataset <- df[]
+dataset <- df[-1]
+dataset$`Happiness Rank` <- NULL
+dataset$Year <- NULL
+dataset$Region <- NULL
 split = sample.split(dataset$`Happiness Score`, SplitRatio = 0.8)
-training_set = subset(dataset, split == TRUE)
-test_set = subset(dataset, split == FALSE)
-str(dataset)
+training_dt = subset(dataset, split == TRUE)
+test_dt = subset(dataset, split == FALSE)
 library(rpart)
-dt = rpart(formula = dataset$`Happiness Score` ~ .,
-                  data = dataset,
+dt = rpart(formula = training_dt$`Happiness Score` ~ .,
+                  data = training_dt,
                   control = rpart.control(minsplit = 10))
 
-y_pred_dt = predict(dt, newdata = test_set)
+y_pred_dt = predict(dt, newdata = test_dt)
 
-actual_pred_dt <- as.data.frame(cbind(Prediction = y_pred_dt, Actual = test_set$`Happiness Score`))
+actual_pred_dt <- as.data.frame(cbind(Prediction = y_pred_dt, Actual = test_dt$`Happiness Score`))
 
 
 gg.dt <- ggplot(actual_pred_dt, aes(Actual, Prediction )) +
@@ -439,6 +443,42 @@ gg.dt
 library(rpart.plot)
 prp(dt)
 ```
+
+### Support Vector Regression
+
+```{r include=FALSE}
+library(caTools)
+set.seed(123)
+data_svr <- df[-1]
+split = sample.split(data_svr$`Happiness Score`, SplitRatio = 0.8)
+training = subset(data_svr, split == TRUE)
+test = subset(data_svr, split == FALSE)
+```
+
+
+```{r}
+library(e1071)
+svr = svm(formula = training$`Happiness Score` ~ .,
+                data = training,
+                type = 'eps-regression',
+                kernel = 'radial')
+
+y_pred_svr = predict(svr,  newdata = test)
+
+Pred_Actual_svr <- as.data.frame(cbind(Prediction = y_pred_svr, Actual = test$`Happiness Score`))
+
+
+
+
+gg.svr <- ggplot(Pred_Actual_svr, aes(Actual, Prediction )) +
+  geom_point() + theme_bw() + geom_abline() +
+  labs(title = "SVR", x = "Actual happiness score",
+       y = "Predicted happiness score")
+
+gg.svr
+
+```
+
 ### Random Forest Regression
 
 ```{r}
