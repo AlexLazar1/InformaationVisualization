@@ -230,6 +230,8 @@ plot_ly(df ,x = ~`Economy (GDP per Capita)`, y = ~`Happiness Score`,  hoverinfo 
     title = "Happiness vs GDP")
 ```
 
+
+
 ### Interactive plot 2 Happiness vs Economy
 ```{r, echo=FALSE, warning=FALSE, message=FALSE}
 
@@ -260,6 +262,8 @@ plot_ly(df, x = ~`Economy (GDP per Capita)`, y = ~`Happiness Score`, z = ~`Healt
 
 
 ```
+
+
 
 ### Correlation plot
 Let’s see the correlation between numerical variables in our dataset.
@@ -340,8 +344,8 @@ ggplot(df, aes(x=Region, y=`Happiness Score`))+
   geom_violin(aes(fill=Region),alpha=0.7,scale = "width")+ theme_bw() +
   theme(axis.title = element_text(size = (8)), axis.text.x = element_text(angle = 90, hjust = 1))
 ```
-#### Linear Regression for predicting the happines of a country judging by the health/life expectancy
-
+### Linear Regression for predicting the happines of a country judging by the health/life expectancy
+For the first model we tried **Linear Regression** to try to predict the happiness based on the what looks to be the best predictor: Life expectancy
 
 ```{r , echo=FALSE, warning=FALSE, message=FALSE}
 
@@ -404,6 +408,37 @@ ggplot(predict_actual_4, aes(Actual, Prediction )) +
        y = "Predicted happiness score") 
 ```
 
+
+### Decisional Tree
+
+
+```{r}
+dataset <- df[]
+split = sample.split(dataset$`Happiness Score`, SplitRatio = 0.8)
+training_set = subset(dataset, split == TRUE)
+test_set = subset(dataset, split == FALSE)
+str(dataset)
+library(rpart)
+dt = rpart(formula = dataset$`Happiness Score` ~ .,
+                  data = dataset,
+                  control = rpart.control(minsplit = 10))
+
+y_pred_dt = predict(dt, newdata = test_set)
+
+actual_pred_dt <- as.data.frame(cbind(Prediction = y_pred_dt, Actual = test_set$`Happiness Score`))
+
+
+gg.dt <- ggplot(actual_pred_dt, aes(Actual, Prediction )) +
+  geom_point() + theme_bw() + geom_abline() +
+  labs(title = "Decisional Tree", x = "Actual happiness score",
+       y = "Predicted happiness score")
+gg.dt
+
+
+# Plotting the tree
+library(rpart.plot)
+prp(dt)
+```
 ### Random Forest Regression
 
 ```{r}
